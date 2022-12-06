@@ -520,6 +520,22 @@ mod tests {
     }
 
     #[test]
+    fn test_create_duplicate_timestamp_index() {
+        let sql = r"
+CREATE TABLE monitor (
+  host_id    INT,
+  idc        STRING,
+  ts         TIMESTAMP,
+  TIME INDEX (ts),
+  TIME INDEX (ts),
+  PRIMARY KEY (host),
+)
+ENGINE=mito;
+        ";
+        let _result = ParserContext::create_with_dialect(sql, &GenericDialect {}).unwrap();
+    }
+
+    #[test]
     fn test_validate_create() {
         let sql = r"
 CREATE TABLE rcx ( a INT, b STRING, c INT )
@@ -641,6 +657,7 @@ CREATE TABLE monitor (
   ts         TIMESTAMP,
   cpu        DOUBLE DEFAULT 0,
   memory     DOUBLE,
+  TIME INDEX (ts),
   TIME INDEX (ts),
   PRIMARY KEY (host),
 )
