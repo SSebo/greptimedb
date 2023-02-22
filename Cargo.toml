@@ -55,12 +55,20 @@ async-stream = "0.3"
 async-trait = "0.1"
 chrono = { version = "0.4", features = ["serde"] }
 # TODO(LFC): Use released Datafusion when it officially dependent on Arrow 29.0
-datafusion = { git = "https://github.com/apache/arrow-datafusion.git", rev = "4917235a398ae20145c87d20984e6367dc1a0c1e" }
-datafusion-common = { git = "https://github.com/apache/arrow-datafusion.git", rev = "4917235a398ae20145c87d20984e6367dc1a0c1e" }
-datafusion-expr = { git = "https://github.com/apache/arrow-datafusion.git", rev = "4917235a398ae20145c87d20984e6367dc1a0c1e" }
-datafusion-optimizer = { git = "https://github.com/apache/arrow-datafusion.git", rev = "4917235a398ae20145c87d20984e6367dc1a0c1e" }
-datafusion-physical-expr = { git = "https://github.com/apache/arrow-datafusion.git", rev = "4917235a398ae20145c87d20984e6367dc1a0c1e" }
-datafusion-sql = { git = "https://github.com/apache/arrow-datafusion.git", rev = "4917235a398ae20145c87d20984e6367dc1a0c1e" }
+#datafusion = { git = "https://github.com/apache/arrow-datafusion.git", rev = "4917235a398ae20145c87d20984e6367dc1a0c1e" }
+#datafusion-common = { git = "https://github.com/apache/arrow-datafusion.git", rev = "4917235a398ae20145c87d20984e6367dc1a0c1e" }
+#datafusion-expr = { git = "https://github.com/apache/arrow-datafusion.git", rev = "4917235a398ae20145c87d20984e6367dc1a0c1e" }
+#datafusion-optimizer = { git = "https://github.com/apache/arrow-datafusion.git", rev = "4917235a398ae20145c87d20984e6367dc1a0c1e" }
+#datafusion-physical-expr = { git = "https://github.com/apache/arrow-datafusion.git", rev = "4917235a398ae20145c87d20984e6367dc1a0c1e" }
+#datafusion-sql = { git = "https://github.com/apache/arrow-datafusion.git", rev = "4917235a398ae20145c87d20984e6367dc1a0c1e" }
+
+datafusion = { path = "/Users/sebo/Source/arrow-datafusion/datafusion/core/" }
+datafusion-common = { path = "/Users/sebo/Source/arrow-datafusion/datafusion/common"}
+datafusion-expr = { path = "/Users/sebo/Source/arrow-datafusion/datafusion/expr"}
+datafusion-optimizer = { path = "/Users/sebo/Source/arrow-datafusion/datafusion/optimizer"}
+datafusion-physical-expr = { path = "/Users/sebo/Source/arrow-datafusion/datafusion/physical-expr"}
+datafusion-sql = { path = "/Users/sebo/Source/arrow-datafusion/datafusion/sql"}
+
 futures = "0.3"
 futures-util = "0.3"
 parquet = "29.0"

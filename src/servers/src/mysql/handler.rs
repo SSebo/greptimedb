@@ -19,6 +19,7 @@ use std::time::Instant;
 use async_trait::async_trait;
 use common_query::Output;
 use common_telemetry::{error, trace};
+use datatypes::schema::Schema;
 use opensrv_mysql::{
     AsyncMysqlShim, ErrorKind, InitWriter, ParamParser, QueryResultWriter, StatementMetaWriter,
 };
@@ -27,6 +28,11 @@ use session::context::Channel;
 use session::Session;
 use snafu::ensure;
 use tokio::io::AsyncWrite;
+use common_telemetry::tracing::log;
+use query::plan::LogicalPlan;
+use sql::parser::ParserContext;
+use sql::dialect::GenericDialect;
+use sql::statements::statement::Statement;
 
 use crate::auth::{Identity, Password, UserProviderRef};
 use crate::error::{self, Result};
@@ -91,6 +97,21 @@ impl MysqlInstanceShim {
         );
         output
     }
+
+    async fn do_describe(&self, statement: Statement) -> Result<Option<(Schema, LogicalPlan)>> {
+        trace!("Start executing describe: '{:?}'", statement);
+        let start = Instant::now();
+
+        let output = self.query_handler
+            .do_describe(statement.clone(), self.session.context());
+
+        trace!(
+            "Finished executing describe: '{:?}', total time costs in microseconds: {}",
+            statement,
+            start.elapsed().as_micros()
+        );
+        output
+    }
 }
 
 #[async_trait]
@@ -140,13 +161,53 @@ impl<W: AsyncWrite + Send + Sync + Unpin> AsyncMysqlShim<W> for MysqlInstanceShi
         true
     }
 
-    async fn on_prepare<'a>(&'a mut self, _: &'a str, w: StatementMetaWriter<'a, W>) -> Result<()> {
-        w.error(
-            ErrorKind::ER_UNKNOWN_ERROR,
-            b"prepare statement is not supported yet",
-        )
-        .await?;
-        Ok(())
+    async fn on_prepare<'a>(&'a mut self, query: &'a str, w: StatementMetaWriter<'a, W>) -> Result<()> {
+        log::debug!("prepared original query is: {}", query);
+        // let mut query = format!("PREPARE foo AS {}", query);
+        let mut query = query.to_string();
+        let mut index = 1;
+        loop {
+            if let Some(position) = query.find('?') {
+                query.replace_range(position..position + 1, &format!("${}", index));
+                index += 1;
+            }
+            break;
+        }
+
+        log::debug!("prepared query is {}", query);
+
+        let statement = ParserContext::create_with_dialect(&query, &GenericDialect {});
+        let statement = match statement {
+            Err(e) => {
+                w.error(ErrorKind::ER_SYNTAX_ERROR, e.to_string().as_bytes()).await?;
+                return Ok(());
+            }
+            Ok(s) => s
+        };
+
+        if statement.len() != 1 {
+            w.error(ErrorKind::ER_SYNTAX_ERROR, b"prepare statement only support single statement").await?;
+            return Ok(());
+        }
+
+        // SAFETY: check length is 1
+        let statement = statement.first().unwrap().to_owned();
+
+        let plan = match self.do_describe(statement).await {
+            Err(e) => {
+                w.error(ErrorKind::ER_INTERNAL_ERROR, e.to_string().as_bytes()).await?;
+                return Ok(());
+            }
+            Ok(None) => {
+                w.error(ErrorKind::ER_INTERNAL_ERROR, b"prepare statement can not generate query plan").await?;
+                return Ok(());
+            }
+            Ok(Some((_, plan))) => plan
+        };
+
+        log::debug!("prepared statement query plan {:?}", plan);
+
+        return Ok(());
     }
 
     async fn on_execute<'a>(
@@ -159,13 +220,13 @@ impl<W: AsyncWrite + Send + Sync + Unpin> AsyncMysqlShim<W> for MysqlInstanceShi
             ErrorKind::ER_UNKNOWN_ERROR,
             b"prepare statement is not supported yet",
         )
-        .await?;
+            .await?;
         Ok(())
     }
 
     async fn on_close<'a>(&'a mut self, _stmt_id: u32)
-    where
-        W: 'async_trait,
+        where
+            W: 'async_trait,
     {
         // do nothing because we haven't implemented prepare statement
     }

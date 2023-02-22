@@ -24,6 +24,7 @@ use servers::query_handler::grpc::{GrpcQueryHandler, GrpcQueryHandlerRef};
 use servers::query_handler::sql::{SqlQueryHandler, SqlQueryHandlerRef};
 use session::context::QueryContextRef;
 use snafu::ResultExt;
+use query::plan::LogicalPlan;
 use sql::statements::statement::Statement;
 
 use crate::error::{self, Result};
@@ -68,7 +69,7 @@ impl SqlQueryHandler for StandaloneSqlQueryHandler {
             .context(error::InvokeDatanodeSnafu)
     }
 
-    fn do_describe(&self, stmt: Statement, query_ctx: QueryContextRef) -> Result<Option<Schema>> {
+    fn do_describe(&self, stmt: Statement, query_ctx: QueryContextRef) -> Result<Option<(Schema, LogicalPlan)>> {
         self.0
             .do_describe(stmt, query_ctx)
             .context(error::InvokeDatanodeSnafu)

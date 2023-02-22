@@ -48,6 +48,7 @@ use query::{QueryEngineFactory, QueryEngineRef};
 use servers::query_handler::sql::SqlQueryHandler;
 use session::context::QueryContextRef;
 use snafu::{ensure, OptionExt, ResultExt};
+use query::plan::LogicalPlan;
 use sql::ast::Value as SqlValue;
 use sql::statements::create::Partitions;
 use sql::statements::sql_value_to_value;
@@ -543,7 +544,7 @@ impl SqlQueryHandler for DistInstance {
         self.handle_statement(stmt, query_ctx).await
     }
 
-    fn do_describe(&self, stmt: Statement, query_ctx: QueryContextRef) -> Result<Option<Schema>> {
+    fn do_describe(&self, stmt: Statement, query_ctx: QueryContextRef) -> Result<Option<(Schema, LogicalPlan)>> {
         if let Statement::Query(_) = stmt {
             self.query_engine
                 .describe(QueryStatement::Sql(stmt), query_ctx)

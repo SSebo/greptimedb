@@ -28,6 +28,7 @@ use servers::query_handler::sql::SqlQueryHandler;
 use servers::query_handler::InfluxdbLineProtocolHandler;
 use session::context::QueryContextRef;
 use tokio::sync::mpsc;
+use query::plan::LogicalPlan;
 
 use crate::auth::{DatabaseAuthInfo, MockUserProvider};
 
@@ -76,7 +77,7 @@ impl SqlQueryHandler for DummyInstance {
         &self,
         _stmt: sql::statements::statement::Statement,
         _query_ctx: QueryContextRef,
-    ) -> Result<Option<Schema>> {
+    ) -> Result<Option<(Schema, LogicalPlan)>> {
         unimplemented!()
     }
 

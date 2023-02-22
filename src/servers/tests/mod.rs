@@ -33,6 +33,7 @@ use servers::query_handler::sql::{ServerSqlQueryHandlerRef, SqlQueryHandler};
 use servers::query_handler::{ScriptHandler, ScriptHandlerRef};
 use session::context::QueryContextRef;
 use snafu::ensure;
+use query::plan::LogicalPlan;
 use sql::statements::statement::Statement;
 use table::test_util::MemTable;
 
@@ -93,7 +94,7 @@ impl SqlQueryHandler for DummyInstance {
         unimplemented!()
     }
 
-    fn do_describe(&self, stmt: Statement, query_ctx: QueryContextRef) -> Result<Option<Schema>> {
+    fn do_describe(&self, stmt: Statement, query_ctx: QueryContextRef) -> Result<Option<(Schema, LogicalPlan)>> {
         if let Statement::Query(_) = stmt {
             let schema = self
                 .query_engine

@@ -58,6 +58,7 @@ use servers::query_handler::{
 };
 use session::context::QueryContextRef;
 use snafu::prelude::*;
+use query::plan::LogicalPlan;
 use sql::dialect::GenericDialect;
 use sql::parser::ParserContext;
 use sql::statements::statement::Statement;
@@ -485,7 +486,7 @@ impl SqlQueryHandler for Instance {
             .and_then(|output| query_interceptor.post_execute(output, query_ctx.clone()))
     }
 
-    fn do_describe(&self, stmt: Statement, query_ctx: QueryContextRef) -> Result<Option<Schema>> {
+    fn do_describe(&self, stmt: Statement, query_ctx: QueryContextRef) -> Result<Option<(Schema, LogicalPlan)>> {
         self.sql_handler.do_describe(stmt, query_ctx)
     }
 

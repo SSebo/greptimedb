@@ -74,7 +74,7 @@ impl SqlQueryHandler for DummyInstance {
         &self,
         _stmt: sql::statements::statement::Statement,
         _query_ctx: QueryContextRef,
-    ) -> Result<Option<Schema>> {
+    ) -> Result<Option<(Schema, LogicalPlan)>> {
         unimplemented!()
     }
 

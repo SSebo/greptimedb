@@ -28,6 +28,7 @@ use servers::promql::PromqlHandler;
 use servers::query_handler::sql::SqlQueryHandler;
 use session::context::{QueryContext, QueryContextRef};
 use snafu::prelude::*;
+use query::plan::LogicalPlan;
 use sql::ast::ObjectName;
 use sql::statements::statement::Statement;
 use sql::statements::tql::Tql;
@@ -335,7 +336,7 @@ impl SqlQueryHandler for Instance {
             .await
     }
 
-    fn do_describe(&self, stmt: Statement, query_ctx: QueryContextRef) -> Result<Option<Schema>> {
+    fn do_describe(&self, stmt: Statement, query_ctx: QueryContextRef) -> Result<Option<(Schema, LogicalPlan)>> {
         if let Statement::Query(_) = stmt {
             self.query_engine
                 .describe(QueryStatement::Sql(stmt), query_ctx)
