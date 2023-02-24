@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::collections::HashMap;
 use std::fmt::Debug;
 
 use datafusion_expr::LogicalPlan as DfLogicalPlan;
 use datatypes::schema::Schema;
 use snafu::ResultExt;
+use datatypes::data_type::DataType;
 
 use crate::error::Result;
 
@@ -46,4 +48,12 @@ impl LogicalPlan {
             }
         }
     }
+
+    // pub fn param_types(&self) -> Result<HashMap<String, Option<DataType>>> {
+    //     match self {
+    //         Self::DfPlan(plan) => {
+    //             plan.get_parameter_types()
+    //         }
+    //     }
+    // }
 }

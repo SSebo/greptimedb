@@ -92,6 +92,7 @@ impl OptimizerRule for TypeConversionRule {
             | LogicalPlan::Distinct { .. }
             | LogicalPlan::Values { .. }
             | LogicalPlan::SetVariable { .. }
+            | LogicalPlan::Dml { .. }
             | LogicalPlan::Analyze { .. } => {
                 let inputs = plan.inputs();
                 let mut new_inputs = Vec::with_capacity(inputs.len());

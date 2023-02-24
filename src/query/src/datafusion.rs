@@ -372,7 +372,7 @@ mod tests {
 
         let stmt = QueryLanguageParser::parse_sql(sql).unwrap();
 
-        let schema = engine
+        let (schema, _) = engine
             .describe(stmt, Arc::new(QueryContext::new()))
             .unwrap();
 

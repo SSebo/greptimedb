@@ -120,11 +120,13 @@ impl<'a> ParserContext<'a> {
 
                     Keyword::COPY => self.parse_copy(),
 
+                    Keyword::PREPARE => self.parse_prepare(),
+
                     Keyword::NoKeyword
-                        if w.value.to_uppercase() == tql_parser::TQL && w.quote_style.is_none() =>
-                    {
-                        self.parse_tql()
-                    }
+                    if w.value.to_uppercase() == tql_parser::TQL && w.quote_style.is_none() =>
+                        {
+                            self.parse_tql()
+                        }
 
                     // todo(hl) support more statements.
                     _ => self.unsupported(self.peek_token_as_string()),
@@ -141,7 +143,7 @@ impl<'a> ParserContext<'a> {
             sql: self.sql,
             keyword,
         }
-        .fail()
+            .fail()
     }
 
     /// Parses SHOW statements
@@ -318,12 +320,26 @@ impl<'a> ParserContext<'a> {
         Ok(Statement::DropTable(DropTable::new(table_ident)))
     }
 
+    fn parse_prepare(&mut self) -> Result<Statement> {
+        self.parser.next_token();
+        let statement =
+            self.parser
+                .parse_prepare()
+                .with_context(|_| error::UnexpectedSnafu {
+                    sql: self.sql,
+                    expected: "a query statement",
+                    actual: self.peek_token_as_string(),
+                })?;
+
+        Ok(Statement::Explain(Explain::try_from(statement)?))
+    }
+
     // Report unexpected token
     pub(crate) fn expected<T>(&self, expected: &str, found: Token) -> Result<T> {
         Err(ParserError::ParserError(format!(
             "Expected {expected}, found: {found}",
         )))
-        .context(SyntaxSnafu { sql: self.sql })
+            .context(SyntaxSnafu { sql: self.sql })
     }
 
     pub fn matches_keyword(&mut self, expected: Keyword) -> bool {
@@ -573,7 +589,7 @@ mod tests {
             statement: Box::new(sp_statement),
             format: None,
         })
-        .unwrap();
+            .unwrap();
 
         assert_eq!(stmts[0], Statement::Explain(explain))
     }
@@ -595,7 +611,7 @@ mod tests {
             stmts.pop().unwrap(),
             Statement::DropTable(DropTable::new(ObjectName(vec![
                 Ident::new("my_schema"),
-                Ident::new("foo")
+                Ident::new("foo"),
             ])))
         );
 
@@ -607,7 +623,7 @@ mod tests {
             Statement::DropTable(DropTable::new(ObjectName(vec![
                 Ident::new("my_catalog"),
                 Ident::new("my_schema"),
-                Ident::new("foo")
+                Ident::new("foo"),
             ])))
         )
     }

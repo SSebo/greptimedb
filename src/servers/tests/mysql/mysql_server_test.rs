@@ -131,7 +131,7 @@ async fn test_schema_validation() -> Result<()> {
         schema: "public",
         username: "greptime",
     })
-    .await?;
+        .await?;
 
     let pass = create_connection_default_db_name(server_port, false).await;
     assert!(pass.is_ok());
@@ -144,7 +144,7 @@ async fn test_schema_validation() -> Result<()> {
         schema: "public",
         username: "no_access_user",
     })
-    .await?;
+        .await?;
 
     let fail = create_connection_default_db_name(server_port, false).await;
     assert!(fail.is_err());
@@ -255,7 +255,7 @@ async fn test_server_required_secure_client_plain() -> Result<()> {
     let client_tls = false;
 
     #[allow(unused)]
-    let TestingData {
+        let TestingData {
         column_schemas,
         mysql_columns_def,
         columns,
@@ -292,7 +292,7 @@ async fn test_server_required_secure_client_plain_with_pkcs8_priv_key() -> Resul
     let client_tls = false;
 
     #[allow(unused)]
-    let TestingData {
+        let TestingData {
         column_schemas,
         mysql_columns_def,
         columns,
@@ -324,7 +324,7 @@ async fn test_db_name() -> Result<()> {
     let client_tls = false;
 
     #[allow(unused)]
-    let TestingData {
+        let TestingData {
         column_schemas,
         mysql_columns_def,
         columns,
@@ -439,6 +439,59 @@ async fn test_query_concurrently() -> Result<()> {
                         .await
                         .unwrap();
                 }
+            }
+            expect_executed_queries_per_worker
+        }))
+    }
+    let mut total_pending_queries = threads * expect_executed_queries_per_worker;
+    for handle in join_handles.iter_mut() {
+        total_pending_queries -= handle.await.unwrap();
+    }
+    assert_eq!(0, total_pending_queries);
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore]
+async fn test_query_prepared() -> Result<()> {
+    common_telemetry::init_default_ut_logging();
+
+    let table = MemTable::default_numbers_table();
+
+    let mysql_server = create_mysql_server(table, Default::default())?;
+    let listening = "127.0.0.1:0".parse::<SocketAddr>().unwrap();
+    let server_addr = mysql_server.start(listening).await.unwrap();
+    let server_port = server_addr.port();
+
+    let threads = 2;
+    let expect_executed_queries_per_worker = 2;
+    let mut join_handles = vec![];
+    for _ in 0..threads {
+        join_handles.push(tokio::spawn(async move {
+            let mut rand: StdRng = rand::SeedableRng::from_entropy();
+
+            let mut connection = create_connection_default_db_name(server_port, false)
+                .await
+                .unwrap();
+            for _ in 0..expect_executed_queries_per_worker {
+                let expected: u32 = rand.gen_range(0..100);
+                let statement = connection
+                    .prep(format!(
+                        "SELECT uint32s FROM numbers WHERE uint32s = ?"
+                    ))
+                    .await
+                    .unwrap();
+                // assert_eq!(result, expected);
+                println!("{}", statement.id());
+
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await
+
+                // let should_recreate_conn = expected == 1;
+                // if should_recreate_conn {
+                //     connection = create_connection_default_db_name(server_port, false)
+                //         .await
+                //         .unwrap();
+                // }
             }
             expect_executed_queries_per_worker
         }))

@@ -33,6 +33,7 @@ use servers::query_handler::sql::{ServerSqlQueryHandlerRef, SqlQueryHandler};
 use servers::query_handler::{ScriptHandler, ScriptHandlerRef};
 use session::context::QueryContextRef;
 use snafu::ensure;
+use common_telemetry::tracing::log;
 use query::plan::LogicalPlan;
 use sql::statements::statement::Statement;
 use table::test_util::MemTable;
@@ -96,11 +97,11 @@ impl SqlQueryHandler for DummyInstance {
 
     fn do_describe(&self, stmt: Statement, query_ctx: QueryContextRef) -> Result<Option<(Schema, LogicalPlan)>> {
         if let Statement::Query(_) = stmt {
-            let schema = self
+            let describe = self
                 .query_engine
-                .describe(QueryStatement::Sql(stmt), query_ctx)
-                .unwrap();
-            Ok(Some(schema))
+                .describe(QueryStatement::Sql(stmt), query_ctx);
+            log::debug!("do_describe: {:?}", describe);
+            Ok(Some(describe.unwrap()))
         } else {
             Ok(None)
         }

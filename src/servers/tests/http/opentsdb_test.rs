@@ -27,6 +27,7 @@ use servers::query_handler::sql::SqlQueryHandler;
 use servers::query_handler::OpentsdbProtocolHandler;
 use session::context::QueryContextRef;
 use tokio::sync::mpsc;
+use query::plan::LogicalPlan;
 
 struct DummyInstance {
     tx: mpsc::Sender<String>,

@@ -163,21 +163,21 @@ impl<W: AsyncWrite + Send + Sync + Unpin> AsyncMysqlShim<W> for MysqlInstanceShi
 
     async fn on_prepare<'a>(&'a mut self, query: &'a str, w: StatementMetaWriter<'a, W>) -> Result<()> {
         log::debug!("prepared original query is: {}", query);
-        // let mut query = format!("PREPARE foo AS {}", query);
+        // let mut query = format!("PREPARE AS {}", query);
         let mut query = query.to_string();
-        let mut index = 1;
-        loop {
-            if let Some(position) = query.find('?') {
-                query.replace_range(position..position + 1, &format!("${}", index));
-                index += 1;
-            }
-            break;
-        }
+        // let mut index = 1;
+        // loop {
+        //     if let Some(position) = query.find('?') {
+        //         query.replace_range(position..position + 1, &format!("${}", index));
+        //         index += 1;
+        //     }
+        //     break;
+        // }
 
         log::debug!("prepared query is {}", query);
 
         let statement = ParserContext::create_with_dialect(&query, &GenericDialect {});
-        let statement = match statement {
+        let mut statement = match statement {
             Err(e) => {
                 w.error(ErrorKind::ER_SYNTAX_ERROR, e.to_string().as_bytes()).await?;
                 return Ok(());
@@ -191,7 +191,7 @@ impl<W: AsyncWrite + Send + Sync + Unpin> AsyncMysqlShim<W> for MysqlInstanceShi
         }
 
         // SAFETY: check length is 1
-        let statement = statement.first().unwrap().to_owned();
+        let statement = statement.remove(0);
 
         let plan = match self.do_describe(statement).await {
             Err(e) => {

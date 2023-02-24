@@ -32,6 +32,7 @@ use servers::query_handler::sql::SqlQueryHandler;
 use servers::query_handler::{PrometheusProtocolHandler, PrometheusResponse};
 use session::context::QueryContextRef;
 use tokio::sync::mpsc;
+use query::plan::LogicalPlan;
 
 struct DummyInstance {
     tx: mpsc::Sender<(String, Vec<u8>)>,
