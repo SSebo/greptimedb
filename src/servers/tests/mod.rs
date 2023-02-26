@@ -22,8 +22,10 @@ use catalog::local::{MemoryCatalogManager, MemoryCatalogProvider, MemorySchemaPr
 use catalog::{CatalogList, CatalogProvider, SchemaProvider};
 use common_catalog::consts::{DEFAULT_CATALOG_NAME, DEFAULT_SCHEMA_NAME};
 use common_query::Output;
+use common_telemetry::tracing::log;
 use datatypes::schema::Schema;
 use query::parser::{PromQuery, QueryLanguageParser, QueryStatement};
+use query::plan::LogicalPlan;
 use query::{QueryEngineFactory, QueryEngineRef};
 use script::engine::{CompileContext, EvalContext, Script, ScriptEngine};
 use script::python::{PyEngine, PyScript};
@@ -33,8 +35,6 @@ use servers::query_handler::sql::{ServerSqlQueryHandlerRef, SqlQueryHandler};
 use servers::query_handler::{ScriptHandler, ScriptHandlerRef};
 use session::context::QueryContextRef;
 use snafu::ensure;
-use common_telemetry::tracing::log;
-use query::plan::LogicalPlan;
 use sql::statements::statement::Statement;
 use table::test_util::MemTable;
 
@@ -89,13 +89,22 @@ impl SqlQueryHandler for DummyInstance {
 
     async fn do_statement_query(
         &self,
-        _stmt: Statement,
-        _query_ctx: QueryContextRef,
+        stmt: Statement,
+        query_ctx: QueryContextRef,
     ) -> Result<Output> {
-        unimplemented!()
+        let plan = self
+            .query_engine
+            .statement_to_plan(QueryStatement::Sql(stmt), query_ctx)
+            .unwrap();
+        let output = self.query_engine.execute(&plan).await.unwrap();
+        Ok(output)
     }
 
-    fn do_describe(&self, stmt: Statement, query_ctx: QueryContextRef) -> Result<Option<(Schema, LogicalPlan)>> {
+    fn do_describe(
+        &self,
+        stmt: Statement,
+        query_ctx: QueryContextRef,
+    ) -> Result<Option<(Schema, LogicalPlan)>> {
         if let Statement::Query(_) = stmt {
             let describe = self
                 .query_engine

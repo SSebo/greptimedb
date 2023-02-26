@@ -22,9 +22,12 @@ use datafusion::physical_plan::udaf::AggregateUDF;
 use datafusion::physical_plan::udf::ScalarUDF;
 use datafusion::sql::planner::{ContextProvider, PlannerContext, SqlToRel};
 use datafusion_common::ScalarValue;
-use datafusion_expr::TableSource;
+use datafusion_common::ScalarValue::UInt64;
+use datafusion_expr::logical_plan::Prepare;
+use datafusion_expr::{LogicalPlan as DfLogicalPlan, TableSource};
 use datatypes::arrow::datatypes::DataType;
 use datatypes::prelude::DataType as DataTypeTrait;
+use datatypes::value::Value;
 use session::context::QueryContextRef;
 use snafu::ResultExt;
 use sql::statements::explain::Explain;
@@ -59,12 +62,43 @@ impl<'a, S: ContextProvider + Send + Sync> DfPlanner<'a, S> {
                 .map(|v| v.as_arrow_type())
                 .collect(),
         );
-        let result = self
+        let mut result = self
             .sql_to_rel
-            .query_to_plan(query.inner, &mut context)
+            .query_to_plan(query.inner.clone(), &mut context)
             .context(error::PlanSqlSnafu { sql })
             .map_err(BoxedError::new)
             .context(QueryPlanSnafu)?;
+
+        let values: Vec<ScalarValue> = query
+            .param_values
+            .clone()
+            .into_iter()
+            .map(|v| match v {
+                Value::UInt64(v) => ScalarValue::UInt64(Some(v)),
+                // FIXME:(SSebo)
+                _ => UInt64(None),
+            })
+            .collect();
+
+        // FIXME:(SSebo)
+        if !values.is_empty() {
+            let data_types = query
+                .param_types()
+                .clone()
+                .into_iter()
+                // FIXME(SSebo)
+                .map(|t| t.try_into().unwrap())
+                .collect();
+
+            result = DfLogicalPlan::Prepare(Prepare {
+                name: "dummy_name".to_string(),
+                data_types,
+                input: Arc::new(result),
+            })
+            .with_param_values(values)
+            // FIXME(SSebo)
+            .unwrap();
+        }
 
         Ok(LogicalPlan::DfPlan(result))
     }

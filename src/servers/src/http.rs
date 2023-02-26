@@ -37,7 +37,6 @@ use common_recordbatch::{util, RecordBatch};
 use common_telemetry::logging::info;
 use datatypes::data_type::DataType;
 use futures::FutureExt;
-use query::plan::LogicalPlan;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

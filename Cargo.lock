@@ -6669,6 +6669,7 @@ version = "0.1.0"
 dependencies = [
  "aide",
  "api",
+ "arc-swap",
  "arrow-flight",
  "async-trait",
  "axum",
@@ -6704,6 +6705,7 @@ dependencies = [
  "once_cell",
  "openmetrics-parser",
  "opensrv-mysql",
+ "parking_lot",
  "pgwire",
  "pin-project",
  "postgres-types",

@@ -144,6 +144,55 @@ impl ConcreteDataType {
     }
 }
 
+impl TryInto<ArrowDataType> for ConcreteDataType {
+    type Error = Error;
+
+    fn try_into(self) -> std::result::Result<ArrowDataType, Self::Error> {
+        Ok(match self {
+            ConcreteDataType::Null(_) => ArrowDataType::Null,
+            ConcreteDataType::Boolean(_) => ArrowDataType::Boolean,
+
+            // Numeric types:
+            ConcreteDataType::Int8(_) => ArrowDataType::Int8,
+            ConcreteDataType::Int16(_) => ArrowDataType::Int16,
+            ConcreteDataType::Int32(_) => ArrowDataType::Int32,
+            ConcreteDataType::Int64(_) => ArrowDataType::Int64,
+            ConcreteDataType::UInt8(_) => ArrowDataType::UInt8,
+            ConcreteDataType::UInt16(_) => ArrowDataType::UInt16,
+            ConcreteDataType::UInt32(_) => ArrowDataType::UInt32,
+            ConcreteDataType::UInt64(_) => ArrowDataType::UInt64,
+            ConcreteDataType::Float32(_) => ArrowDataType::Float32,
+            ConcreteDataType::Float64(_) => ArrowDataType::Float64,
+
+            // String types:
+            ConcreteDataType::Binary(_) => ArrowDataType::Binary,
+            ConcreteDataType::String(_) => ArrowDataType::Utf8,
+
+            // Date types:
+            ConcreteDataType::Date(_) => ArrowDataType::Date32,
+            ConcreteDataType::DateTime(_) => ArrowDataType::Date64,
+            ConcreteDataType::Timestamp(t) => match t {
+                TimestampType::Second(_) => {
+                    ArrowDataType::Timestamp(arrow_schema::TimeUnit::Second, None)
+                }
+                TimestampType::Millisecond(_) => {
+                    ArrowDataType::Timestamp(arrow_schema::TimeUnit::Millisecond, None)
+                }
+                TimestampType::Microsecond(_) => {
+                    ArrowDataType::Timestamp(arrow_schema::TimeUnit::Microsecond, None)
+                }
+                TimestampType::Nanosecond(_) => {
+                    ArrowDataType::Timestamp(arrow_schema::TimeUnit::Microsecond, None)
+                }
+            },
+
+            // Compound types:
+            // TODO::SSebo
+            ConcreteDataType::List(_) => unimplemented!(),
+        })
+    }
+}
+
 impl TryFrom<&ArrowDataType> for ConcreteDataType {
     type Error = Error;
 

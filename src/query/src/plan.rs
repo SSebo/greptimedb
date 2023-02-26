@@ -15,10 +15,11 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
 
+use datafusion_common::ScalarValue;
 use datafusion_expr::LogicalPlan as DfLogicalPlan;
+use datatypes::data_type::ConcreteDataType;
 use datatypes::schema::Schema;
 use snafu::ResultExt;
-use datatypes::data_type::DataType;
 
 use crate::error::Result;
 
@@ -49,11 +50,30 @@ impl LogicalPlan {
         }
     }
 
-    // pub fn param_types(&self) -> Result<HashMap<String, Option<DataType>>> {
-    //     match self {
-    //         Self::DfPlan(plan) => {
-    //             plan.get_parameter_types()
-    //         }
-    //     }
-    // }
+    pub fn param_types(&self) -> Option<HashMap<String, Option<ConcreteDataType>>> {
+        match self {
+            Self::DfPlan(plan) => {
+                // TODO(SSebo): return proper error
+                let types = plan.get_parameter_types().ok()?;
+
+                Some(
+                    types
+                        .into_iter()
+                        .map(|(k, v)| (k, v.map(|v| ConcreteDataType::from_arrow_type(&v))))
+                        .collect(),
+                )
+            }
+        }
+    }
+
+    pub fn with_param_values(&self, param_values: Vec<ScalarValue>) -> Option<LogicalPlan> {
+        match self {
+            // TODO(SSebo): return proper error
+            Self::DfPlan(plan) => plan
+                .clone()
+                .with_param_values(param_values)
+                .ok()
+                .map(LogicalPlan::DfPlan),
+        }
+    }
 }
